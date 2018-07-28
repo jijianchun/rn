@@ -2,11 +2,9 @@ import React, {Component} from 'react';
 import {
   AppRegistry,
   StyleSheet,
-  Text,
   View,
   Platform,
   TextInput,
-  Button,
   ScrollView,
   Dimensions,
   ListView,
@@ -17,20 +15,17 @@ import {
   RefreshControl
 } from 'react-native';
 
+import Swiper from 'react-native-swiper';
+
+import {Container, Header, Content, Button, InputGroup, Icon, Input, List, ListItem, Thumbnail, Text} from 'native-base';
 import Detail from './detail';
-const ds = new ListView.DataSource({
-  rowHasChanged: (r1, r2) => r1 !== r2
-}); // 创建数据源
-const circleSize = 8;
-const circleMargin = 5;
 
 export default class home extends Component {
   constructor(props) {
     super(props);
     this.state = {
       searchText: '', // 保存当前输入的文本
-      currentPage: 0,
-      dataSource: ds.cloneWithRows([
+      products: [
         {
           image: require('./images/advertisement-image-01.jpg'),
           title: '商品1',
@@ -80,7 +75,7 @@ export default class home extends Component {
           title: '商品10',
           subTitle: '描述10'
         }
-      ]),
+      ],
       advertisements: [
         {
           image: require('./images/advertisement-image-01.jpg')
@@ -96,40 +91,39 @@ export default class home extends Component {
     }
   }
   render () {
-    const advertisementCount = this.state.advertisements.length;  // 指示器圆点个数
-    const indicatorWidth = circleSize * advertisementCount + circleMargin * advertisementCount * 2; // 计算指示器的宽度
-    const left = (Dimensions.get('window').width - indicatorWidth) / 2; //计算指示器最左边的坐标位置
-
     return (
-      <View style={styles.container}>
-        <StatusBar
-          backgroundColor={'blue'}  // 设置背景色
-          barStyle={'default'}
-          networkActivityIndicatorVisible={true}  // 显示正在请求网络的状态
-        >
-        </StatusBar>
-        <View style={styles.searchBar}>
-          <TextInput
-            style={styles.input}
-            placeholder='搜索商品'
-            onChangeText={(text) => {
-              this.setState({searchText: text})
-              console.log('输入的内容是' + this.state.searchText);
-            }}
-          ></TextInput>
-          <Button
-            style={styles.button}
-            title="搜索"
-            onPress={() => Alert.alert('搜索内容' + this.state.searchText, null, null)}
-            ></Button>
-        </View>
-        <View style={styles.advertisement}>
-          <ScrollView
-            ref="scrollView"
-            horizontal={true} // 横向滚动
-            showsHorizontalScrollIndicator={false}  // 不显示横向滚动条
-            pagingEnabled={true}  // 分页
+      <Container>
+        <Header searchBar rounded>
+          <StatusBar
+            backgroundColor={'blue'}  // 设置背景色
+            barStyle={'default'}
+            networkActivityIndicatorVisible={true}  // 显示正在请求网络的状态
           >
+          </StatusBar>
+          <InputGroup>
+            <Icon name='ios-analytics' />
+            <Input
+              placeholder='搜索商品'
+              onChangeText={(text) => {
+                this.setState({searchText: text});
+                console.log('输入的内容是' + this.state.searchText);
+              }}
+            />
+          </InputGroup>
+          <Button
+            transparent
+            onPress={() => {
+              Alert.alert('搜索内容' + this.state.searchText, null, null);
+            }}
+          >
+          搜索
+          </Button>
+        </Header>
+        <Content>
+          <Swiper
+            loop={true}
+            height={180}
+            autoplay={true}>
             {this.state.advertisements.map((advertisement, index) => {
               return (
                 <TouchableHighlight key={index} onPress={() => {Alert.alert('你单击了轮播图', null, null)}}>
@@ -140,58 +134,23 @@ export default class home extends Component {
                 </TouchableHighlight>
               )
             })}
-          </ScrollView>
-          <View style={[styles.indicator, {left: left}]}>
-            {this.state.advertisements.map((advertisement, index) =>{
-              return (
-                <View
-                  key={index}
-                  style={(index === this.state.currentPage) ? styles.circleSelected : styles.circle}
-                />
-              )
-            })}
-          </View>
-        </View>
-        <View style={styles.products}>
-          <ListView
-            dataSource={this.state.dataSource}
-            renderRow={this._renderRow.bind(this)}
-            renderSeparator={this._renderSeparator}
-            refreshControl={this._renderRefreshControl()} />
-        </View>
-      </View>
+          </Swiper>
+          <List
+            dataArray={this.state.products}
+            renderRow={this._renderRow}
+          >
+          </List>
+        </Content>
+      </Container>
     );
   }
 
-  componentDidMount () {
-    this._startTimer();
-  }
-
-  componentWillUnmount () {
-    clearInterval(this.interval);
-  }
-
-  _startTimer () {
-    this.interval = setInterval(() => {
-      nextPage = this.state.currentPage + 1;
-      if (nextPage >= 3) {
-        nextPage = 0; // 如果已经滚动到最后一页，下次返回第一页
-      }
-      this.setState({
-        currentPage: nextPage
-      });
-      const offsetX = nextPage * Dimensions.get('window').width;  // 计算x轴偏移量
-      this.refs.scrollView.scrollResponderScrollTo({
-        x: offsetX,
-        y: 0,
-        animated: true
-      })
-    }, 2000)
-  }
-
-  _renderRow (rowData, sectionID, rowID) {
+  _renderRow (product) {
+    console.log('this', this);
     return (
-      <TouchableHighlight onPress={() => {
+      <ListItem
+        button
+        onPress={() => {
           const {navigator} = this.props;
           if (navigator) {
             navigator.push({
@@ -200,30 +159,19 @@ export default class home extends Component {
               params: {
                 productTitle: rowData.title
               }
-            });
+            })
           }
-      }}>
-        <View style={styles.row}>
-          <Image source={rowData.image} style={styles.productImage}>
-          </Image>
-          <View style={styles.productText}>
-            <Text style={styles.productTitle}>
-              {rowData.title}
-            </Text>
-            <Text style={styles.productSubTitle}>
-              {rowData.subTitle}
-            </Text>
-          </View>
-        </View>
-      </TouchableHighlight>
+        }}
+      >
+        <Thumbnail
+          square
+          size={40}
+          source={product.image}
+        />
+        <Text>{product.title}</Text>
+        <Text note>{product.subTitle}</Text>
+      </ListItem>
     )
-  }
-
-  _renderSeparator (sectionID, rowID, adjacentRowHighlighted) {
-    return (
-      <View key={`${sectionID}-${rowID}`} style={styles.divider}>
-      </View>
-    );
   }
 
   _renderRefreshControl () {
@@ -260,82 +208,8 @@ export default class home extends Component {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1
-  },
-  searchBar: {
-    marginTop: Platform.OS === 'ios' ? 20 : 0,  // ios和android对于状态栏的处理方式不一样
-    height: 40,
-    flexDirection: 'row'
-  },
-  input: {
-    flex: 1,
-    borderColor: 'gray',
-    borderWidth: 2,
-    borderRadius: 10
-  },
-  button: {
-    flex: 1
-  },
-  advertisement: {
-    height: 180
-  },
   advertisementContent: {
     width: Dimensions.get('window').width,
     height: 180
-  },
-  indicator: {
-    position: 'absolute',
-    top: 160,
-    flexDirection: 'row'
-  },
-  circle: {
-    width: circleSize,
-    height: circleSize,
-    borderRadius: circleSize / 2,
-    backgroundColor: 'gray',
-    marginHorizontal: circleMargin
-  },
-  circleSelected: {
-    width: circleSize,
-    height: circleSize,
-    borderRadius: circleSize / 2,
-    backgroundColor: 'white',
-    marginHorizontal: circleMargin
-  },
-  products: {
-    flex: 1
-  },
-  row: {
-    height: 60,
-    flexDirection: 'row',
-    backgroundColor: 'white'
-  },
-  productImage: {
-    marginLeft: 10,
-    marginRight: 10,
-    width: 40,
-    height: 40,
-    alignSelf: 'center'
-  },
-  productText: {
-    flex: 1,
-    marginTop: 10,
-    marginBottom: 10
-  },
-  productTitle: {
-    flex: 3,
-    fontSize: 16
-  },
-  productSubTitle: {
-    flex: 2,
-    fontSize: 14,
-    color: 'gray'
-  },
-  divider: {
-    height: 1,
-    width: Dimensions.get('window').width - 5,
-    marginLeft: 5,
-    backgroundColor: 'lightgray'
   }
 });
